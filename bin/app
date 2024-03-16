@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'optimist'
+require_relative '../lib/application'
+
+banner_doc = <<~BANNER
+  Application - A CLI tool on a template gem application.
+  Usage: app [global options] subcommand [command options]
+  Global Options:
+   - hello: Say hello.
+   - bye: Say bye.
+BANNER
+
+yes_no_doc = <<~DOC
+  Yes or No.
+  Options:
+    - 'yes' - Say yes.
+    - 'no' - Say no.
+  The default is 'yes'.
+DOC
+yes_no_opts = %w[yes no]
+
+time_doc = <<~DOC
+  The time to say bye.
+DOC
+
+opt = Optimist
+
+opt.options do
+  banner banner_doc
+  stop_on SUB_COMMANDS
+end
+
+opt.die 'No subcommand given' unless ARGV.size.positive?
+
+cmd = ARGV.shift # get the subcommand
+type = nil
+path = Dir.pwd
+cmd_opts =  case cmd
+            when 'hello'
+              type = :hello
+              opt.options do
+                opt(:yes_no, yes_no_doc, { type: :string, default: 'yes' })
+              end
+            when 'bye'
+              type = :bye
+              opt.options do
+                opt(:time, time_doc, { type: :string, default: Time.now.strftime('%Y-%m-%d %H:%M:%S') })
+              end
+            else
+              opt.die "unknown subcommand #{cmd.inspect}"
+            end
+
+invalid_fields = []
+case type
+when :hello
+  invalid_fields << { yes_no: 'Invalid option', valid_opts: yes_no_opts_opts } unless yes_no_opts.include? cmd_opts[:env] # rubocop:disable Layout/LineLength
+when :bye
+  begin
+    Time.parse(cmd_opts[:time])
+  rescue StandardError
+    invalid_fields << { time: 'Invalid time' }
+  end
+end
+
+opt.die JSON.pretty_generate(invalid_fields) unless invalid_fields.empty?
+
+Application::Application.new(type, path, cmd_opts)

@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+puts "\n== Running Tests =="
+system 'bundle exec rake'
+
+puts "\n== Tests complete =="
